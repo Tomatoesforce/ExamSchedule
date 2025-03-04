@@ -24,6 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
     offsetTime = parseInt(offsetTime);
     roomElem.textContent = room;
 
+    var helpButton = document.getElementById("helpButton");
+
+    helpButton.addEventListener("click", function() {
+        alert("寻找高三2班电教委员获得帮助");
+    });
+    
     function fetchData() {
         return fetch('exam_config.json', { cache: "no-store" }) // 不保留缓存
             .then(response => response.json())
