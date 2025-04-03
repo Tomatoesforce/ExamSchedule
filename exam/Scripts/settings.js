@@ -81,57 +81,13 @@ document.addEventListener("DOMContentLoaded", () => {
         themeLink.href = theme === "light" ? "Styles/light.css" : "Styles/dark.css";
     });
 
-    configFileInput.addEventListener("change", (event) => {
-        try {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const config = JSON.parse(e.target.result);
-                    
-                    // 验证配置文件格式
-                    if (!config.examInfos || !Array.isArray(config.examInfos)) {
-                        throw new Error("无效的配置文件格式");
-                    }
-                    
-                    // 验证每个考试信息
-                    config.examInfos.forEach(exam => {
-                        if (!exam.name || !exam.start || !exam.end) {
-                            throw new Error("考试信息不完整");
-                        }
-                        // 验证日期格式
-                        if (isNaN(new Date(exam.start).getTime()) || isNaN(new Date(exam.end).getTime())) {
-                            throw new Error("无效的日期格式");
-                        }
-                    });
-                    
-                    // 保存配置到本地存储
-                    localStorage.setItem('localExamConfig', JSON.stringify(config));
-                    errorSystem.show('配置文件已加载，将在下次启动时生效');
-                    
-                } catch (error) {
-                    errorSystem.show('配置文件格式错误: ' + error.message);
-                }
-            };
-            reader.readAsText(file);
-        } catch (e) {
-            errorSystem.show('读取文件失败: ' + e.message);
-        }
-    });
+    // 禁用文件上传输入框
+    configFileInput.disabled = true;
+    configFileInput.style.display = 'none';
 
-    clearConfigBtn.addEventListener("click", () => {
-        try {
-            if (confirm("确定要清除本地配置吗？这将恢复使用默认配置文件。")) {
-                localStorage.removeItem('localExamConfig');
-                configFileInput.value = ''; // 清空文件选择
-                errorSystem.show('本地配置已清除，将在下次启动时生效');
-            }
-        } catch (e) {
-            errorSystem.show('清除配置失败: ' + e.message);
-        }
-    });
+    // 禁用清除本地配置按钮
+    clearConfigBtn.disabled = true;
+    clearConfigBtn.style.display = 'none';
 
     try {
         document.body.style.zoom = zoomLevel;
@@ -139,3 +95,24 @@ document.addEventListener("DOMContentLoaded", () => {
         errorSystem.show('初始化缩放失败: ' + e.message);
     }
 });
+
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
+function setCookie(name, value, days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
