@@ -9,8 +9,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const zoomInput = document.getElementById("zoom-input");
     const themeToggle = document.getElementById("theme-toggle");
     const themeLink = document.getElementById("theme-link");
-    const configFileInput = document.getElementById("config-file");
-    const clearConfigBtn = document.getElementById("clear-config-btn");
 
     let offsetTime = getCookie("offsetTime") || 0;
     let room = getCookie("room") || "";
@@ -81,38 +79,9 @@ document.addEventListener("DOMContentLoaded", () => {
         themeLink.href = theme === "light" ? "Styles/light.css" : "Styles/dark.css";
     });
 
-    // 禁用文件上传输入框
-    configFileInput.disabled = true;
-    configFileInput.style.display = 'none';
-
-    // 禁用清除本地配置按钮
-    clearConfigBtn.disabled = true;
-    clearConfigBtn.style.display = 'none';
-
     try {
         document.body.style.zoom = zoomLevel;
     } catch (e) {
         errorSystem.show('初始化缩放失败: ' + e.message);
     }
 });
-
-function getCookie(name) {
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
-}
-
-function setCookie(name, value, days) {
-    var expires = "";
-    if (days) {
-        var date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        expires = "; expires=" + date.toUTCString();
-    }
-    document.cookie = name + "=" + (value || "") + expires + "; path=/";
-}
