@@ -6,6 +6,6 @@
     "考试结束": "audio/end.mp3",
     "核对信息": "audio/hedui_noeng.mp3",
     "检场": "audio/jinchang.mp3",
-    "展示科目袋": "audio/zhanshikemudai.mp3"
+    "展示科目袋": "audio/zhanshikemudai.mp3",
     "分发试题卷": "audio/hedui_eng.mp3"
 }
