@@ -1,39 +1,12 @@
 {
-    "examName": "（考试广播测试）福建省部分地市2025届高中毕业班4月诊断性质量检测",
-    "message": "内部测试通道",
+    "examName": "（考试广播测试考场）福建省部分地市2025届高中毕业班4月诊断性质量检测",
+    "message": "内部功能测试",
     "room": "",
     "examInfos": [
         {
             "name": "生物",
-            "start": "2025-04-11T16:15:00",
-            "end": "2025-03-27T17:30:00"
+            "start": "2025-04-11T17:00:00",
+            "end": "2025-04-11T18:15:00"
         }
-      ]
-    "reminders": [                        
-    {
-      "condition": "beforeStart",      
-      "time": "5",                      
-      "audio": "分发试题卷"              
-    },
-    {
-      "condition": "start",            
-      "time": "0",                      
-      "audio": "考试开始"                
-    },
-    {
-      "condition": "beforeEnd",        
-      "time": "30",                     
-      "audio": "距离结束还有30分钟"      
-    },
-    {
-      "condition": "beforeEnd",        
-      "time": "15",                     
-      "audio": "距离结束还有15分钟"      
-    },
-    {
-      "condition": "end",              
-      "time": "0",                      
-      "audio": "考试结束"                
-    }
-  ]
+    ]
 }
