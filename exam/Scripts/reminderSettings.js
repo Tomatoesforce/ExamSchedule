@@ -1,70 +1,5 @@
 // 提醒设置相关函数，适配exam页面
 
-function addReminder() {
-    var table = document.getElementById('reminderTable');
-    var row = table.insertRow(table.rows.length - 1);
-    row.innerHTML = `
-        <td>
-            <select class="reminder-select">
-                <option value="beforeStart" selected>当距离考试开始时间还有</option>
-                <option value="beforeEnd">当距离考试结束时间还有</option>
-                <option value="afterEnd">当考试结束后</option>
-                <option value="start">当考试开始时</option>
-                <option value="end">当考试结束时</option>
-                <option value="atTime">当指定时间时</option>
-            </select>
-        </td>
-        <td>
-            <input type="number" class="reminder-time-input" placeholder="分钟">
-        </td>
-        <td>
-            <select name="audioSelect" class="reminder-select"></select>
-        </td>
-        <td><button class="reminder-btn" onclick="removeReminder(this)">移除提醒</button></td>
-    `;
-    // 监听类型切换
-    row.cells[0].querySelector('select').addEventListener('change', function() {
-        var inputCell = row.cells[1];
-        var selectVal = this.value;
-        if (selectVal === 'start' || selectVal === 'end') {
-            inputCell.innerHTML = `<input type="number" class="reminder-time-input" placeholder="-" disabled>`;
-        } else if (selectVal === 'atTime') {
-            inputCell.innerHTML = `<input type="datetime-local" class="reminder-time-input" placeholder="时间">`;
-        } else {
-            inputCell.innerHTML = `<input type="number" class="reminder-time-input" placeholder="分钟">`;
-        }
-    });
-    // 音频选项填充（含不可用标记），每次都刷新
-    fetch('audio_files.json')
-        .then(response => response.json())
-        .then(audioFiles => {
-            const select = row.cells[2].querySelector('select');
-            select.innerHTML = ''; // 确保每次都清空
-            Object.keys(audioFiles).forEach(type => {
-                var option = document.createElement('option');
-                option.value = type;
-                // 检查可用性
-                var audio = new Audio(audioFiles[type]);
-                var unavailable = false;
-                audio.addEventListener('error', function() {
-                    unavailable = true;
-                    option.textContent = type + '（不可用）';
-                });
-                audio.load();
-                option.textContent = type;
-                if (!audioFiles[type]) {
-                    option.textContent = type + '（不可用）';
-                }
-                select.appendChild(option);
-            });
-        });
-}
-
-function removeReminder(button) {
-    var row = button.parentNode.parentNode;
-    row.parentNode.removeChild(row);
-}
-
 function saveConfig() {
     try {
         // 新增：保存启用提醒总开关
@@ -83,7 +18,7 @@ function saveConfig() {
         }
         var table = document.getElementById('reminderTable');
         var reminders = [];
-        for (var i = 1; i < table.rows.length - 1; i++) {
+        for (var i = 1; i < table.rows.length; i++) {
             var row = table.rows[i];
             var condition = row.cells[0].querySelector('select').value;
             var timeInput = row.cells[1].querySelector('input');
@@ -205,7 +140,7 @@ function exportConfig() {
 // 校验函数，供关闭弹窗和保存时调用
 function validateReminders() {
     var table = document.getElementById('reminderTable');
-    for (var i = 1; i < table.rows.length - 1; i++) {
+    for (var i = 1; i < table.rows.length; i++) {
         var row = table.rows[i];
         var condition = row.cells[0].querySelector('select').value;
         var timeInput = row.cells[1].querySelector('input');
@@ -235,8 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 切换开关时禁用/启用表格和导出按钮
     function updateReminderTableState() {
         const disabled = !reminderEnableToggle.checked;
-        document.getElementById('reminderTable').querySelectorAll('input,select,button').forEach(el => {
-            if (el.id === 'reminder-enable-toggle' || el.id === 'export-config-btn') return;
+        document.getElementById('reminderTable').querySelectorAll('input,select').forEach(el => {
             el.disabled = disabled;
         });
         document.getElementById('export-config-btn').disabled = disabled;
@@ -248,127 +182,89 @@ document.addEventListener("DOMContentLoaded", () => {
     const reminderCookie = getCookie("examReminders");
     if (reminderCookie) {
         const reminders = JSON.parse(decodeURIComponent(reminderCookie));
-        if (Array.isArray(reminders)) {
-            var table = document.getElementById('reminderTable');
-            while (table.rows.length > 2) {
-                table.deleteRow(1);
-            }
-            fetch('audio_files.json')
-                .then(response => response.json())
-                .then(audioFiles => {
-                    const validAudioTypes = Object.keys(audioFiles);
-                    const defaultAudio = validAudioTypes[0];
-                    reminders.forEach(function(reminder) {
-                        if (!validAudioTypes.includes(reminder.audio)) {
-                            reminder.audio = defaultAudio;
-                        }
-                        var row = table.insertRow(table.rows.length - 1);
-                        // 音频选项每次都刷新
-                        let audioOptions = validAudioTypes
-                            .map(audio => {
-                                let text = audio;
-                                var audioObj = new Audio(audioFiles[audio]);
-                                audioObj.addEventListener('error', function() {
-                                    text = audio + '（不可用）';
-                                });
-                                audioObj.load();
-                                if (!audioFiles[audio]) text = audio + '（不可用）';
-                                return `<option value="${audio}" ${reminder.audio === audio ? 'selected' : ''}>${text}</option>`;
-                            })
-                            .join('');
-                        // 新增：atTime类型
-                        let inputHtml;
-                        if (reminder.condition === 'start' || reminder.condition === 'end') {
-                            inputHtml = `<input type="number" class="reminder-time-input" value="" placeholder="-" disabled>`;
-                        } else if (reminder.condition === 'atTime') {
-                            // 还原为datetime-local
-                            let dtVal = '';
-                            if (reminder.time) {
-                                // yyyy-mm-ddThh:mm:ss -> yyyy-mm-ddThh:mm
-                                dtVal = reminder.time.substring(0, 16);
-                            }
-                            inputHtml = `<input type="datetime-local" class="reminder-time-input" value="${dtVal}" placeholder="时间">`;
-                        } else {
-                            inputHtml = `<input type="number" class="reminder-time-input" value="${reminder.time}" placeholder="分钟">`;
-                        }
-                        row.innerHTML = `
-                            <td>
-                                <select class="reminder-select">
-                                    <option value="beforeStart" ${reminder.condition === 'beforeStart' ? 'selected' : ''}>当距离考试开始时间还有</option>
-                                    <option value="beforeEnd" ${reminder.condition === 'beforeEnd' ? 'selected' : ''}>当距离考试结束时间还有</option>
-                                    <option value="afterEnd" ${reminder.condition === 'afterEnd' ? 'selected' : ''}>当考试结束后</option>
-                                    <option value="start" ${reminder.condition === 'start' ? 'selected' : ''}>当考试开始时</option>
-                                    <option value="end" ${reminder.condition === 'end' ? 'selected' : ''}>当考试结束时</option>
-                                    <option value="atTime" ${reminder.condition === 'atTime' ? 'selected' : ''}>当指定时间时</option>
-                                </select>
-                            </td>
-                            <td>${inputHtml}</td>
-                            <td>
-                                <select name="audioSelect" class="reminder-select">
-                                    ${audioOptions}
-                                </select>
-                            </td>
-                            <td><button class="reminder-btn" onclick="removeReminder(this)">移除提醒</button></td>
-                        `;
-                        row.cells[0].querySelector('select').addEventListener('change', function() {
-                            let inputCell = row.cells[1];
-                            let val = this.value;
-                            if (val === 'start' || val === 'end') {
-                                inputCell.innerHTML = `<input type="number" class="reminder-time-input" placeholder="-" disabled>`;
-                            } else if (val === 'atTime') {
-                                inputCell.innerHTML = `<input type="datetime-local" class="reminder-time-input" placeholder="时间">`;
-                            } else {
-                                inputCell.innerHTML = `<input type="number" class="reminder-time-input" placeholder="分钟">`;
-                            }
-                        });
-                    });
-                    loadRemindersToQueue(reminders);
-                });
-        }
-    }
-    // 导出按钮事件
-    const exportBtn = document.getElementById('export-config-btn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', exportConfig);
-    }
-    // 监听类型选择变化，动态切换文本框可编辑状态
-    document.getElementById('reminderTable').addEventListener('change', function(e) {
-        if (e.target && e.target.classList.contains('reminder-type-select')) {
-            const row = e.target.closest('tr');
-            const timeInput = row.querySelector('.reminder-time-input');
-            const val = e.target.value;
-            if (val === "beforeStart" || val === "beforeEnd" || val === "afterExam") {
-                timeInput.removeAttribute('readonly');
-                timeInput.removeAttribute('disabled');
+        const table = document.getElementById('reminderTable');
+        reminders.forEach(reminder => {
+            const row = table.insertRow(table.rows.length);
+            const conditionCell = row.insertCell(0);
+            const timeCell = row.insertCell(1);
+            const audioCell = row.insertCell(2);
+
+            const conditionSelect = document.createElement('select');
+            conditionSelect.className = 'reminder-select';
+            const options = [
+                { value: 'beforeStart', text: '当距离考试开始时间还有' },
+                { value: 'beforeEnd', text: '当距离考试结束时间还有' },
+                { value: 'afterEnd', text: '当考试结束后' },
+                { value: 'start', text: '当考试开始时' },
+                { value: 'end', text: '当考试结束时' },
+                { value: 'atTime', text: '当指定时间时' }
+            ];
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.text;
+                if (option.value === reminder.condition) {
+                    opt.selected = true;
+                }
+                conditionSelect.appendChild(opt);
+            });
+            conditionCell.appendChild(conditionSelect);
+
+            let timeInput;
+            if (reminder.condition === 'start' || reminder.condition === 'end') {
+                timeInput = document.createElement('input');
+                timeInput.type = 'number';
+                timeInput.className = 'reminder-time-input';
+                timeInput.placeholder = '-';
+                timeInput.disabled = true;
+            } else if (reminder.condition === 'atTime') {
+                timeInput = document.createElement('input');
+                timeInput.type = 'datetime-local';
+                timeInput.className = 'reminder-time-input';
+                timeInput.placeholder = '时间';
+                if (reminder.time) {
+                    timeInput.value = reminder.time;
+                }
             } else {
-                timeInput.setAttribute('readonly', 'readonly');
-                timeInput.setAttribute('disabled', 'disabled');
+                timeInput = document.createElement('input');
+                timeInput.type = 'number';
+                timeInput.className = 'reminder-time-input';
+                timeInput.placeholder = '分钟';
+                if (reminder.time) {
+                    timeInput.value = reminder.time;
+                }
             }
-        }
-    });
+            timeCell.appendChild(timeInput);
 
-    // 拦截关闭按钮
-    const closeBtn = document.getElementById('close-reminder-btn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function(e) {
-            if (!validateReminders()) {
-                e.preventDefault();
-                // 阻止关闭弹窗，需配合reminderModal.js
-                window.__reminderCloseBlocked = true;
-                return;
-            }
-            window.__reminderCloseBlocked = false;
-            // ...existing code for关闭弹窗...
-        });
-    }
+            const audioSelect = document.createElement('select');
+            audioSelect.name = 'audioSelect';
+            audioSelect.className = 'reminder-select';
+            fetch('audio_files.json')
+              .then(response => response.json())
+              .then(audioFiles => {
+                    Object.keys(audioFiles).forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type;
+                        option.textContent = type;
+                        if (type === reminder.audio) {
+                            option.selected = true;
+                        }
+                        audioSelect.appendChild(option);
+                    });
+                });
+            audioCell.appendChild(audioSelect);
 
-    // 添加停止音频按钮事件
-    const stopAudioBtn = document.getElementById('stop-audio-btn');
-    if (stopAudioBtn) {
-        stopAudioBtn.addEventListener('click', function() {
-            if (window.audioController && typeof window.audioController.stop === 'function') {
-                window.audioController.stop();
-            }
+            // 监听类型切换
+            conditionSelect.addEventListener('change', function() {
+                const selectVal = this.value;
+                if (selectVal === 'start' || selectVal === 'end') {
+                    timeCell.innerHTML = `<input type="number" class="reminder-time-input" placeholder="-" disabled>`;
+                } else if (selectVal === 'atTime') {
+                    timeCell.innerHTML = `<input type="datetime-local" class="reminder-time-input" placeholder="时间">`;
+                } else {
+                    timeCell.innerHTML = `<input type="number" class="reminder-time-input" placeholder="分钟">`;
+                }
+            });
         });
     }
 });
